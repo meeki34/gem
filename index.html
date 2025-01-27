@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-container {
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            width: 95%;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 15px;
+            margin: 5px 0;
+        }
+
+        .user-message {
+            background-color: #007bff;
+            color: white;
+            align-self: flex-end;
+        }
+
+        .bot-message {
+            background-color: #e9ecef;
+            color: black;
+            align-self: flex-start;
+        }
+
+        .input-container {
+            padding: 20px;
+            background-color: white;
+            border-top: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+        }
+
+        #promptInput {
+            flex-grow: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            outline: none;
+            font-size: 16px;
+        }
+
+        #promptInput:focus {
+            border-color: #007bff;
+        }
+
+        button {
+            padding: 12px 24px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 10px;
+            align-self: flex-start;
+        }
+
+        .typing-dot {
+            height: 8px;
+            width: 8px;
+            background-color: #999;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 2px;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        @keyframes typing {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        @media (max-width: 480px) {
+            .message {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot-message">
+                Hello! I'm your AI assistant. How can I help you today?
+            </div>
+        </div>
+        
+        <div class="input-container">
+            <input type="text" id="promptInput" placeholder="Type your message..." 
+                   onkeypress="handleKeyPress(event)">
+            <button onclick="sendPrompt()">Send</button>
+        </div>
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+            <div class="typing-dot"></div>
+        </div>
+    </div>
+
+    <script>
+        async function sendPrompt() {
+            const promptInput = document.getElementById('promptInput');
+            const prompt = promptInput.value.trim();
+            const chatMessages = document.getElementById('chatMessages');
+            const typingIndicator = document.getElementById('typingIndicator');
+
+            if (!prompt) return;
+
+            // Add user message
+            const userMessage = document.createElement('div');
+            userMessage.className = 'message user-message';
+            userMessage.textContent = prompt;
+            chatMessages.appendChild(userMessage);
+
+            // Clear input
+            promptInput.value = '';
+            
+            // Show typing indicator
+            typingIndicator.style.display = 'block';
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ prompt: prompt })
+                });
+                
+                const data = await response.json();
+                
+                // Add bot message
+                const botMessage = document.createElement('div');
+                botMessage.className = 'message bot-message';
+                botMessage.textContent = data.response || data.error;
+                chatMessages.appendChild(botMessage);
+            } catch (error) {
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'message bot-message';
+                errorMessage.textContent = "Error connecting to server";
+                chatMessages.appendChild(errorMessage);
+            } finally {
+                // Hide typing indicator
+                typingIndicator.style.display = 'none';
+                // Scroll to bottom
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendPrompt();
+            }
+        }
+    </script>
+</body>
+</html>
